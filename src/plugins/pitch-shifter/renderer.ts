@@ -5,6 +5,8 @@ import { singleton } from '@/providers/decorators';
 
 import { defaultTrustedTypePolicy } from '@/utils/trusted-types';
 
+import { ElementFromHtml } from '../utils/renderer';
+
 // Inline the phaze processor script to avoid import issues
 const workerScript = `
 // Simplified phaze-based pitch shifter processor
@@ -177,8 +179,6 @@ class PhaseVocoderProcessor extends OLAProcessor {
 registerProcessor("phase-vocoder-processor", PhaseVocoderProcessor);
 `;
 
-import { ElementFromHtml } from '../utils/renderer';
-
 const slider = ElementFromHtml(sliderHTML);
 
 const roundToTwo = (n: number) => Math.round(n * 1e2) / 1e2;
@@ -197,7 +197,9 @@ const updatePitchShift = () => {
   const linearPitch = Math.pow(ONE_SEMITONE_LINEAR, pitchShift);
 
   if (pitchShifter && pitchShifter.parameters.get('pitchFactor')) {
-    pitchShifter.parameters.get('pitchFactor')!.setValueAtTime(linearPitch, storedAudioContext.currentTime);
+    pitchShifter.parameters
+      .get('pitchFactor')!
+      .setValueAtTime(linearPitch, storedAudioContext.currentTime);
   }
 
   const pitchShiftElement = document.querySelector('#pitch-shift-value');
@@ -297,11 +299,14 @@ const addPitchShifter = async () => {
     };
   });
   if (typeof dataURI !== 'string') return;
-  
+
   try {
     await storedAudioContext.audioWorklet.addModule(dataURI);
-    pitchShifter = new AudioWorkletNode(storedAudioContext, 'phase-vocoder-processor');
-    
+    pitchShifter = new AudioWorkletNode(
+      storedAudioContext,
+      'phase-vocoder-processor',
+    );
+
     storedAudioSource.disconnect();
     storedAudioSource.connect(pitchShifter);
     pitchShifter.connect(storedAudioContext.destination);
